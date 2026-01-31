@@ -173,3 +173,4 @@ cd apps/mobile && eas build
 ## License
 
 MIT
+# Trigger Vercel deployment
