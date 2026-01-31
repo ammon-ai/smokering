@@ -1,6 +1,6 @@
 {
-  "buildCommand": "pnpm --filter @smokering/mobile run build",
+  "buildCommand": "cd apps/mobile && npx expo export --platform web",
   "outputDirectory": "apps/mobile/dist",
-  "installCommand": "corepack enable && pnpm install",
+  "installCommand": "cd apps/mobile && npm install --legacy-peer-deps",
   "framework": null
 }
