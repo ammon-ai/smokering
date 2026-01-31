@@ -1,0 +1,6 @@
+{
+  "buildCommand": "cd apps/mobile && npm install && npx expo export --platform web",
+  "outputDirectory": "apps/mobile/dist",
+  "installCommand": "npm install -g pnpm && pnpm install",
+  "framework": null
+}
