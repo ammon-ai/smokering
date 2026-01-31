@@ -1,0 +1,238 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// ============================================
+// User & Authentication
+// ============================================
+
+model User {
+  id          String    @id @default(cuid())
+  email       String    @unique
+  supabaseId  String?   @unique @map("supabase_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  preferences UserPreferences?
+  equipment   Equipment[]
+  cooks       Cook[]
+
+  @@map("users")
+}
+
+model UserPreferences {
+  id                String  @id @default(cuid())
+  userId            String  @unique @map("user_id")
+  defaultSmokerTemp Int     @default(225) @map("default_smoker_temp")
+  tempUnit          String  @default("F") @map("temp_unit")
+  notifications     Boolean @default(true)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_preferences")
+}
+
+// ============================================
+// Equipment
+// ============================================
+
+model Equipment {
+  id        String     @id @default(cuid())
+  userId    String     @map("user_id")
+  type      SmokerType
+  brand     String?
+  model     String?
+  nickname  String?
+  isDefault Boolean    @default(false) @map("is_default")
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cooks Cook[]
+
+  @@map("equipment")
+}
+
+enum SmokerType {
+  PELLET
+  OFFSET
+  KAMADO
+  ELECTRIC
+  KETTLE
+}
+
+// ============================================
+// Cooks
+// ============================================
+
+model Cook {
+  id          String @id @default(cuid())
+  userId      String @map("user_id")
+  equipmentId String? @map("equipment_id")
+
+  // Meat details
+  meatCut   MeatCut  @map("meat_cut")
+  weightLbs Float    @map("weight_lbs")
+  grade     String?
+  source    String?
+
+  // Cook parameters
+  targetTempF Int        @map("target_temp_f")
+  smokerTempF Int        @map("smoker_temp_f")
+  wrapMethod  WrapMethod @default(NONE) @map("wrap_method")
+  wrapTempF   Int?       @map("wrap_temp_f")
+
+  // Timing
+  plannedServeTime    DateTime  @map("planned_serve_time")
+  actualStartTime     DateTime? @map("actual_start_time")
+  actualFinishTime    DateTime? @map("actual_finish_time")
+  stallStartTime      DateTime? @map("stall_start_time")
+  stallEndTime        DateTime? @map("stall_end_time")
+  restDurationMinutes Int?      @map("rest_duration_minutes")
+
+  // Conditions
+  ambientTempF Int?
+  humidity     Int?
+  altitude     Int?
+  weather      String?
+
+  // Outcomes
+  finishTempF Int?
+  outcome     CookOutcome?
+  notes       String?
+
+  // Prediction tracking
+  predictedFinishTime DateTime? @map("predicted_finish_time")
+
+  // Status
+  status       CookStatus @default(PLANNED)
+  currentPhase String?    @map("current_phase")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  equipment    Equipment?    @relation(fields: [equipmentId], references: [id])
+  tempReadings TempReading[]
+  chatMessages ChatMessage[]
+  phases       CookPhase[]
+
+  @@map("cooks")
+}
+
+enum MeatCut {
+  BRISKET
+  PORK_SHOULDER
+  SPARE_RIBS
+  BABY_BACK_RIBS
+  BEEF_RIBS
+}
+
+enum WrapMethod {
+  NONE
+  BUTCHER_PAPER
+  FOIL
+}
+
+enum CookOutcome {
+  EXCELLENT
+  GOOD
+  OKAY
+  POOR
+}
+
+enum CookStatus {
+  PLANNED
+  ACTIVE
+  RESTING
+  COMPLETED
+  CANCELLED
+}
+
+// ============================================
+// Temperature Readings (Time-series)
+// ============================================
+
+model TempReading {
+  id            String   @id @default(cuid())
+  cookId        String   @map("cook_id")
+  timestamp     DateTime @default(now())
+  internalTempF Int      @map("internal_temp_f")
+  smokerTempF   Int?     @map("smoker_temp_f")
+  probeLocation String?  @map("probe_location")
+
+  cook Cook @relation(fields: [cookId], references: [id], onDelete: Cascade)
+
+  @@index([cookId, timestamp])
+  @@map("temp_readings")
+}
+
+// ============================================
+// Cook Phases
+// ============================================
+
+model CookPhase {
+  id           String    @id @default(cuid())
+  cookId       String    @map("cook_id")
+  name         String
+  plannedStart DateTime  @map("planned_start")
+  plannedEnd   DateTime? @map("planned_end")
+  actualStart  DateTime? @map("actual_start")
+  actualEnd    DateTime? @map("actual_end")
+  confidence   String    // HIGH, MEDIUM, LOW
+  notes        String?
+  order        Int
+
+  cook Cook @relation(fields: [cookId], references: [id], onDelete: Cascade)
+
+  @@index([cookId])
+  @@map("cook_phases")
+}
+
+// ============================================
+// AI Chat
+// ============================================
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  cookId    String   @map("cook_id")
+  role      String   // user, assistant
+  content   String
+  sources   Json?    // Citation references
+  createdAt DateTime @default(now()) @map("created_at")
+
+  cook Cook @relation(fields: [cookId], references: [id], onDelete: Cascade)
+
+  @@index([cookId, createdAt])
+  @@map("chat_messages")
+}
+
+// ============================================
+// RAG Corpus
+// ============================================
+
+model CorpusEntry {
+  id              String   @id @default(cuid())
+  sourceUrl       String   @map("source_url")
+  sourceType      String   @map("source_type")
+  authorExpertise String?  @map("author_expertise")
+  meatCut         String?  @map("meat_cut")
+  weightLbs       Float?   @map("weight_lbs")
+  smokerType      String?  @map("smoker_type")
+  reportedCookTime Int?    @map("reported_cook_time")
+  rawText         String   @map("raw_text")
+  extractedAt     DateTime @default(now()) @map("extracted_at")
+
+  // Vector embedding stored separately via pgvector extension
+  // embedding vector(1536) - added via raw SQL migration
+
+  @@map("corpus_entries")
+}

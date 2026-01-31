@@ -1,0 +1,34 @@
+{
+  "expo": {
+    "name": "SmokeRing",
+    "slug": "smokering",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#1a1a2e"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.smokering.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#1a1a2e"
+      },
+      "package": "com.smokering.app"
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": ["expo-secure-store"],
+    "extra": {
+      "apiUrl": "http://localhost:3001",
+      "eas": {
+        "projectId": "your-project-id"
+      }
+    }
+  }
+}
