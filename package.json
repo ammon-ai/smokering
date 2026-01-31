@@ -2,8 +2,7 @@
   "name": "smokering",
   "version": "1.0.0",
   "private": true,
-  "packageManager": "pnpm@10.2.0",
-  "description": "AI-Native Smoked Meat Assistant",
+    "description": "AI-Native Smoked Meat Assistant",
   "scripts": {
     "dev:api": "pnpm --filter @smokering/api dev",
     "dev:mobile": "pnpm --filter @smokering/mobile start",
